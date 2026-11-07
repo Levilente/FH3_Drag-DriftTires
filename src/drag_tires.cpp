@@ -30,12 +30,11 @@ constexpr int kCompoundDrag  = 19;   // List_TireCompound: 19_Drag
 constexpr int kCompoundRace  = 12;   // List_TireCompound: 12_DOTCompetition (the "Race" compound, 'b' tire model)
 
 // The Level a compound is stored under in List_UpgradeTireCompound; the shop lists a car's compounds by level, names them from the
-// Upgrades row with the same level. Level 8 is the game's "Snow Tire Compound" row (id 277), which no car uses, so it is renamed.
-// Level 10 is new (Upgrades id kDriftUpgradeId).
-constexpr int kDragLevel         = 8;
-constexpr int kDragUpgradeId     = 277;
-constexpr int kDriftLevel        = 10;
-constexpr int kDriftUpgradeId    = 9000010;
+// Upgrades row with the same level. Both levels are new, with new Upgrades rows: nothing the game has is changed.
+constexpr int kDragLevel         = 10;
+constexpr int kDragUpgradeId     = 9000010;
+constexpr int kDriftLevel        = 11;
+constexpr int kDriftUpgradeId    = 9000011;
 
 // Keys of the new texts in Upgrades.str.
 constexpr uint32_t kKeyDragName  = 0xD4A60101u;
@@ -119,8 +118,9 @@ void add_texts_and_sql() {
                               L"not for corners.");
         char buf[900];
         std::snprintf(buf, sizeof buf,
-                      "UPDATE Upgrades SET Name='%s', Description='%s', IconPath='%s', ImagePath='%s' WHERE id=%d AND TypeId='21' AND Level=%d;",
-                      text_ref(kKeyDragName).c_str(), text_ref(kKeyDragDesc).c_str(), kIcon, kImage, kDragUpgradeId, kDragLevel);
+                      "INSERT OR REPLACE INTO Upgrades (id,TypeId,IsException,Name,Level,Description,IconPath,ImagePath) "
+                      "VALUES (%d,'21',0,'%s',%d,'%s','%s','%s');",
+                      kDragUpgradeId, text_ref(kKeyDragName).c_str(), kDragLevel, text_ref(kKeyDragDesc).c_str(), kIcon, kImage);
         sql += buf;
         // The game's drag tire models: tire_drag (normal cars) and tire_OW_drag (open-world cars, whose stock tire model starts with OW_).
         sql += rows_sql(kCompoundDrag, kDragLevel, 20, g_drag_price,

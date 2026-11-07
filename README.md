@@ -48,9 +48,8 @@ Needs CMake and a MinGW-w64 (llvm-mingw) toolchain. Put the FH3 Mod Platform che
 
 Pure data. The mod queues SQL for the platform (`add_sql`), which applies it to a copy of `gamedbRC.slt` that the game reads from `mediaoverride`:
 
-- one `List_UpgradeTireCompound` row per car and compound (compound id, price, tire model; level 8 for drag, level 10 for drift),
-- the names and descriptions as new strings in `Upgrades.str` (`add_string_key`), in the `Upgrades` row of that level (level 8 is the game's unused "Snow Tire
-  Compound" row, which is renamed; level 10 is a new row).
+- one `List_UpgradeTireCompound` row per car and compound (compound id, price, tire model; level 10 for drag, level 11 for drift),
+- the names and descriptions as new strings in `Upgrades.str` (`add_string_key`), in a new `Upgrades` row for each level. Nothing the game already has is changed.
 
 ## License
 
