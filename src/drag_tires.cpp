@@ -17,10 +17,7 @@
 
 #include <windows.h>
 
-#include <cstdarg>
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <string>
 
 namespace {
@@ -51,52 +48,11 @@ const char kImage[] = "GAME:\\Media\\UI\\Textures\\Data_Bound\\Upgrade_Parts\\Ti
 const FH3ModApi* g_api = nullptr;
 FH3Mod* g_mod          = nullptr;
 
-// fh3-mods\DragTires.ini (written with these defaults on first start).
-bool g_drag        = true;
-bool g_drift       = true;
-int g_drag_price   = 10000;
-int g_drift_price  = 10000;
-float g_long_grip  = 1.30f;   // multiplies the Race compound's straight-line (launch and acceleration) grip for the drag compound
-float g_lat_grip   = 0.94f;   // multiplies its cornering grip
-bool g_verbose     = false;   // Log=1 writes lines to platform.log
-
-std::wstring g_cfg_path;
-
-void note(const char* fmt, ...) {   // only with Log=1
-    if (!g_verbose) return;
-    char line[600];
-    va_list ap;
-    va_start(ap, fmt);
-    std::vsnprintf(line, sizeof line, fmt, ap);
-    va_end(ap);
-    if (g_api && g_mod) g_api->log(g_mod, line);
-}
-
-int cfg_int(const wchar_t* key, int def) {
-    wchar_t buf[64] = L"";
-    GetPrivateProfileStringW(L"DragTires", key, L"", buf, 64, g_cfg_path.c_str());
-    if (buf[0]) return static_cast<int>(std::wcstol(buf, nullptr, 10));
-    wchar_t v[32];
-    _snwprintf(v, 32, L"%d", def);
-    WritePrivateProfileStringW(L"DragTires", key, v, g_cfg_path.c_str());
-    return def;
-}
-
-void load_config() {
-    g_drag        = cfg_int(L"Drag", 1) != 0;
-    g_drift       = cfg_int(L"Drift", 1) != 0;
-    g_drag_price  = cfg_int(L"DragPrice", g_drag_price);
-    g_drift_price = cfg_int(L"DriftPrice", g_drift_price);
-    g_long_grip   = cfg_int(L"DragLongGripPercent", 130) / 100.0f;
-    g_lat_grip    = cfg_int(L"DragLatGripPercent", 94) / 100.0f;
-    g_verbose     = cfg_int(L"Log", 0) != 0;
-    if (g_long_grip < 0.5f) g_long_grip = 0.5f;
-    if (g_long_grip > 3.0f) g_long_grip = 3.0f;
-    if (g_lat_grip < 0.5f) g_lat_grip = 0.5f;
-    if (g_lat_grip > 3.0f) g_lat_grip = 3.0f;
-    if (g_drag_price < 0) g_drag_price = 0;
-    if (g_drift_price < 0) g_drift_price = 0;
-}
+// Fixed values (the mod has no settings file).
+constexpr int kDragPrice     = 10000;
+constexpr int kDriftPrice    = 10000;
+constexpr double kLongGrip   = 1.70;   // the drag compound's straight-line (launch and acceleration) grip, as a multiple of the Race compound's
+constexpr double kLatGrip    = 0.55;   // its cornering grip, as a multiple of the Race compound's
 
 std::string text_ref(uint32_t key) {   // how the database refers to a text in Upgrades.str
     return "_&" + std::to_string((static_cast<unsigned long long>(FH3_TABLE_UPGRADES) << 32) | key);
@@ -132,11 +88,11 @@ std::string rows_sql(int compound, int level, int id_offset, int price, int from
 
 void add_texts_and_sql() {
     std::string sql;
-    if (g_drag) {
+    {
         g_api->add_string_key(g_mod, "Upgrades.str", kKeyDragName, L"Drag Tire Compound");
         g_api->add_string_key(g_mod, "Upgrades.str", kKeyDragDesc,
                               L"Installs drag slicks for far more traction in a straight line: much quicker launches and acceleration. "
-                              L"Cornering grip is a little lower than the Race compound.");
+                              L"Cornering grip is far lower than the Race compound: made for going straight.");
         char buf[900];
         std::snprintf(buf, sizeof buf,
                       "INSERT OR REPLACE INTO Upgrades (id,TypeId,IsException,Name,Level,Description,IconPath,ImagePath) "
@@ -144,7 +100,7 @@ void add_texts_and_sql() {
                       kDragUpgradeId, text_ref(kKeyDragName).c_str(), kDragLevel, text_ref(kKeyDragDesc).c_str(), kIcon, kImage);
         sql += buf;
         // The drag compound: a new List_TireCompound row, a copy of the Race compound (12) with more straight-line grip (acceleration at
-        // low and high speed) and a little less cornering grip. The game's own 19_Drag compound is left alone (it only has grip
+        // low and high speed) and much less cornering grip. The game's own 19_Drag compound is left alone (it only has grip
         // when the tires are hot, and the game doesn't heat them up noticeably).
         char c[1200];
         std::snprintf(c, sizeof c,
@@ -157,12 +113,11 @@ void add_texts_and_sql() {
                       "DELETE FROM List_TireCompound WHERE TireCompoundID=%d;"
                       "INSERT INTO List_TireCompound SELECT * FROM dragtires_c;"
                       "DROP TABLE dragtires_c;",
-                      kCompoundRace, kCompoundDrag, static_cast<double>(g_long_grip), static_cast<double>(g_long_grip),
-                      static_cast<double>(g_lat_grip), kCompoundDrag);
+                      kCompoundRace, kCompoundDrag, kLongGrip, kLongGrip, kLatGrip, kCompoundDrag);
         sql += c;
-        sql += rows_sql(kCompoundDrag, kDragLevel, 20, g_drag_price, kLevelRace);
+        sql += rows_sql(kCompoundDrag, kDragLevel, 20, kDragPrice, kLevelRace);
     }
-    if (g_drift) {
+    {
         g_api->add_string_key(g_mod, "Upgrades.str", kKeyDriftName, L"Drift Tire Compound");
         g_api->add_string_key(g_mod, "Upgrades.str", kKeyDriftDesc,
                               L"Installs a tire compound made for sliding: it lets go of the road early and smoothly, so the car breaks away "
@@ -173,12 +128,9 @@ void add_texts_and_sql() {
                       "VALUES (%d,'21',0,'%s',%d,'%s','%s','%s');",
                       kDriftUpgradeId, text_ref(kKeyDriftName).c_str(), kDriftLevel, text_ref(kKeyDriftDesc).c_str(), kIcon, kImage);
         sql += buf;
-        sql += rows_sql(kCompoundDrift, kDriftLevel, 21, g_drift_price, kLevelSport);
+        sql += rows_sql(kCompoundDrift, kDriftLevel, 21, kDriftPrice, kLevelSport);
     }
-    if (!sql.empty()) {
-        g_api->add_sql(g_mod, sql.c_str());
-        note("queued the database changes: drag %d (%d CR), drift %d (%d CR)", g_drag ? 1 : 0, g_drag_price, g_drift ? 1 : 0, g_drift_price);
-    }
+    g_api->add_sql(g_mod, sql.c_str());
 }
 
 }  // namespace
@@ -199,8 +151,6 @@ FH3MOD_EXPORT int fh3mod_init(const FH3ModApi* api) {
     g_mod                 = api->register_mod(&info);
     if (!g_mod) return 1;
 
-    g_cfg_path = std::wstring(api->azimuth_dir) + L"\\fh3-mods\\DragTires.ini";
-    load_config();
     add_texts_and_sql();
     return 0;
 }

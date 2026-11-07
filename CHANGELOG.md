@@ -5,5 +5,6 @@
 First release of **Drag and Drift Tires for Forza Horizon 3**, on the [FH3 Mod Platform](https://github.com/Levilente/FH3_ModPlatform).
 
 - **Garage > Upgrades > Tires and Rims > Tire Compound** gets two new choices on every car: **Drag Tire Compound** and **Drift Tire Compound** (10 000 CR each by default).
-- The drag compound is a new compound made from the Race compound with **+30 % straight-line grip and -6 % cornering grip** (settings `DragLongGripPercent`, `DragLatGripPercent`), on the car's own **Race** tire models (the game's own `19_Drag` is weaker than Race on a cold tire and its `tire_drag` model shows a car with no tires, so neither is used); the drift compound is the game's own hidden `18_Drift` compound on the car's own **Sport** tire models.
+- The drag compound is a new compound made from the Race compound with **170 % of its straight-line grip and 55 % of its cornering grip**, on the car's own **Race** tire models (the game's own `19_Drag` is weaker than Race on a cold tire and its `tire_drag` model shows a car with no tires, so neither is used); the drift compound is the game's own hidden `18_Drift` compound on the car's own **Sport** tire models.
 - Pure data: the mod changes the game's database through the platform (`add_sql`), nothing in the game's files is touched.
+- No settings file: the values are fixed in the mod.

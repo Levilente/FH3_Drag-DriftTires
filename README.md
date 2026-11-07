@@ -14,7 +14,7 @@ upgrade list offers them (only the Hot Wheels Bone Shaker and Twin Mill have the
 
 | Choice | Compound | Tire model | Price |
 |---|---|---|---|
-| **Drag Tire Compound** | new, made from `12_DOTCompetition` (Race) with +30 % straight-line grip and -6 % cornering grip | the car's own Race tire models | 10 000 CR |
+| **Drag Tire Compound** | new, made from `12_DOTCompetition` (Race) with **170 %** of its straight-line grip and **55 %** of its cornering grip | the car's own Race tire models | 10 000 CR |
 | **Drift Tire Compound** | `18_Drift` | the car's own Sport tire models | 10 000 CR |
 
 Both are on every car, are stored per owned car like any other tire compound, and show in the car's tire list with their own name and description.
@@ -25,19 +25,7 @@ Cars that already have the compound (the two Hot Wheels cars) are left alone.
 Put `DragTires.dll` into the `fh3-mods` folder next to the game's platform files, and start the game **twice**: the first start builds the changed
 database and the new texts, which the game reads at its next start.
 
-## Settings
-
-`fh3-mods\DragTires.ini` (written on first start), section `[DragTires]`:
-
-| Key | Default | What |
-|---|---|---|
-| `Drag` | 1 | 0 leaves out the drag compound |
-| `Drift` | 1 | 0 leaves out the drift compound |
-| `DragPrice` | 10000 | Price of the drag compound |
-| `DriftPrice` | 10000 | Price of the drift compound |
-| `DragLongGripPercent` | 130 | Drag compound's launch and acceleration grip, in percent of the Race compound's |
-| `DragLatGripPercent` | 94 | Drag compound's cornering grip, in percent of the Race compound's |
-| `Log` | 0 | 1 writes diagnostic lines to `platform.log` |
+There is no settings file: everything is fixed in the mod (both compounds cost 10 000 CR).
 
 ## Build
 
@@ -50,7 +38,7 @@ Needs CMake and a MinGW-w64 (llvm-mingw) toolchain. Put the FH3 Mod Platform che
 
 Pure data. The mod queues SQL for the platform (`add_sql`), which applies it to a copy of `gamedbRC.slt` that the game reads from `mediaoverride`:
 
-- for the drag compound, a new `List_TireCompound` row (id 23), a copy of the Race compound with more straight-line grip (the game's own `19_Drag` is weaker than Race on a cold tire, and the game doesn't heat tires up noticeably),
+- for the drag compound, a new `List_TireCompound` row (id 23), a copy of the Race compound with much more straight-line grip (the game's own `19_Drag` is weaker than Race on a cold tire, and the game doesn't heat tires up noticeably),
 - one `List_UpgradeTireCompound` row per car and compound (compound id, price, tire models copied from the car's Race / Sport row; level 10 for drag, level 11 for drift),
 - the names and descriptions as new strings in `Upgrades.str` (`add_string_key`), in a new `Upgrades` row for each level. Nothing the game already has is changed.
 
