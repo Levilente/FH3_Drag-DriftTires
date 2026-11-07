@@ -143,9 +143,9 @@ FH3MOD_EXPORT int fh3mod_init(const FH3ModApi* api) {
     info.size             = sizeof info;
     info.name             = "Drag and Drift Tires";
     info.version          = DRAGTIRES_VERSION;
-    info.github_repo      = nullptr;
+    info.github_repo      = "Levilente/FH3_Drag-DriftTires";
     info.platform_version = FH3MOD_PLATFORM_VERSION;
-    info.check_updates    = 0;
+    info.check_updates    = 1;
     info.description      = "Drag and drift tire compounds for every car: Garage > Upgrades > Tires and Rims > Tire Compound.";
     info.offline_only     = 1;
     g_mod                 = api->register_mod(&info);

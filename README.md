@@ -3,7 +3,7 @@
 Two hidden tire compounds from the files of **Forza Horizon 3** (the Xbox One build on PC, through the Azimuth launcher), made buyable on **every car**, on the
 **[FH3 Mod Platform](https://github.com/Levilente/FH3_ModPlatform)**.
 
-> Version **1.0.0**. Needs the FH3 Mod Platform **1.0.0** or newer.
+> Version **1.0.0**. Needs the FH3 Mod Platform **1.2.0** or newer.
 
 ## What it does
 
