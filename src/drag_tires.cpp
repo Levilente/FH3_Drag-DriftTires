@@ -1,10 +1,11 @@
 // Drag & Drift Tires for Forza Horizon 3 (FH3 Mod Platform mod).
 //
 // Adds two tire compounds to every car's Garage > Upgrades > Tires and Rims > Tire Compound list:
-//   - "Drag Tire Compound":  the game's own hidden 19_Drag compound, on the car's Race tire models.
+//   - "Drag Tire Compound":  a new compound made from the Race compound with much more straight-line grip, on the car's Race tire models.
 //   - "Drift Tire Compound": the game's own hidden 18_Drift compound, on the car's Sport tire models.
-// Both compounds are already in the game's files, but no car's upgrade list uses them (only the Hot Wheels Bone Shaker and Twin Mill have
-// them). The game's drag tire model (tire_drag) shows a car with no tires, so it isn't used.
+// The drift compound is already in the game's files, but no car's upgrade list uses it (only the Hot Wheels Twin Mill has it). The game's
+// own 19_Drag compound is weaker than Race on a cold tire and the game's drag tire model (tire_drag) shows a car with no tires, so
+// neither is used.
 //
 // How it works: pure data. The mod queues SQL for the platform (add_sql), which applies it to a copy of gamedbRC.slt that the game reads
 // instead (mediaoverride; the game's own files are never touched):
@@ -26,7 +27,8 @@ namespace {
 
 // Game constants (read from gamedbRC.slt): List_TireCompound ids, and the Upgrades rows for the Tire Compound part (UpgradeTypes id 21).
 constexpr int kCompoundDrift = 18;   // List_TireCompound: 18_Drift
-constexpr int kCompoundDrag  = 19;   // List_TireCompound: 19_Drag
+constexpr int kCompoundDrag  = 23;   // List_TireCompound: new row made by this mod (a copy of 12_DOTCompetition with more straight-line grip)
+constexpr int kCompoundRace  = 12;   // List_TireCompound: 12_DOTCompetition, the copy's base
 constexpr int kLevelSport    = 2;    // List_UpgradeTireCompound.Level of the "Sport Tire Compound" (the drift tires use its tire models)
 constexpr int kLevelRace     = 3;    // ... of the "Race Tire Compound" (the drag tires use its tire models)
 
@@ -54,6 +56,8 @@ bool g_drag        = true;
 bool g_drift       = true;
 int g_drag_price   = 10000;
 int g_drift_price  = 10000;
+float g_long_grip  = 1.30f;   // multiplies the Race compound's straight-line (launch and acceleration) grip for the drag compound
+float g_lat_grip   = 0.94f;   // multiplies its cornering grip
 bool g_verbose     = false;   // Log=1 writes lines to platform.log
 
 std::wstring g_cfg_path;
@@ -83,7 +87,13 @@ void load_config() {
     g_drift       = cfg_int(L"Drift", 1) != 0;
     g_drag_price  = cfg_int(L"DragPrice", g_drag_price);
     g_drift_price = cfg_int(L"DriftPrice", g_drift_price);
+    g_long_grip   = cfg_int(L"DragLongGripPercent", 130) / 100.0f;
+    g_lat_grip    = cfg_int(L"DragLatGripPercent", 94) / 100.0f;
     g_verbose     = cfg_int(L"Log", 0) != 0;
+    if (g_long_grip < 0.5f) g_long_grip = 0.5f;
+    if (g_long_grip > 3.0f) g_long_grip = 3.0f;
+    if (g_lat_grip < 0.5f) g_lat_grip = 0.5f;
+    if (g_lat_grip > 3.0f) g_lat_grip = 3.0f;
     if (g_drag_price < 0) g_drag_price = 0;
     if (g_drift_price < 0) g_drift_price = 0;
 }
@@ -125,14 +135,31 @@ void add_texts_and_sql() {
     if (g_drag) {
         g_api->add_string_key(g_mod, "Upgrades.str", kKeyDragName, L"Drag Tire Compound");
         g_api->add_string_key(g_mod, "Upgrades.str", kKeyDragDesc,
-                              L"Installs drag slicks for the best possible traction in a straight line. Made for launches and the quarter mile, "
-                              L"not for corners.");
+                              L"Installs drag slicks for far more traction in a straight line: much quicker launches and acceleration. "
+                              L"Cornering grip is a little lower than the Race compound.");
         char buf[900];
         std::snprintf(buf, sizeof buf,
                       "INSERT OR REPLACE INTO Upgrades (id,TypeId,IsException,Name,Level,Description,IconPath,ImagePath) "
                       "VALUES (%d,'21',0,'%s',%d,'%s','%s','%s');",
                       kDragUpgradeId, text_ref(kKeyDragName).c_str(), kDragLevel, text_ref(kKeyDragDesc).c_str(), kIcon, kImage);
         sql += buf;
+        // The drag compound: a new List_TireCompound row, a copy of the Race compound (12) with more straight-line grip (acceleration at
+        // low and high speed) and a little less cornering grip. The game's own 19_Drag compound is left alone (it only has grip
+        // when the tires are hot, and the game doesn't heat them up noticeably).
+        char c[1200];
+        std::snprintf(c, sizeof c,
+                      "DROP TABLE IF EXISTS temp.dragtires_c;"
+                      "CREATE TEMP TABLE dragtires_c AS SELECT * FROM List_TireCompound WHERE TireCompoundID=%d;"
+                      "UPDATE dragtires_c SET TireCompoundID=%d, DisplayName='23_DragTires', "
+                      "TorqueFreeLongFrictionScaleAccel0=TorqueFreeLongFrictionScaleAccel0*%.4f, "
+                      "TorqueFreeLongFrictionScaleAccel1=TorqueFreeLongFrictionScaleAccel1*%.4f, "
+                      "TorqueFreeLatFrictionScale=TorqueFreeLatFrictionScale*%.4f;"
+                      "DELETE FROM List_TireCompound WHERE TireCompoundID=%d;"
+                      "INSERT INTO List_TireCompound SELECT * FROM dragtires_c;"
+                      "DROP TABLE dragtires_c;",
+                      kCompoundRace, kCompoundDrag, static_cast<double>(g_long_grip), static_cast<double>(g_long_grip),
+                      static_cast<double>(g_lat_grip), kCompoundDrag);
+        sql += c;
         sql += rows_sql(kCompoundDrag, kDragLevel, 20, g_drag_price, kLevelRace);
     }
     if (g_drift) {
