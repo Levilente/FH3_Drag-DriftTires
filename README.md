@@ -7,15 +7,15 @@ Two hidden tire compounds from the files of **Forza Horizon 3** (the Xbox One bu
 
 ## What it does
 
-The game ships a `19_Drag` and an `18_Drift` tire compound (grip curves, heat, wear) and a drag tire model (`tire_drag`, `tire_OW_drag`), but no car's
+The game ships a `19_Drag` and an `18_Drift` tire compound (grip curves, heat, wear) but no car's
 upgrade list offers them (only the Hot Wheels Bone Shaker and Twin Mill have the compounds, on a normal tire model). This mod adds them to the list:
 
 **Garage > Upgrades > Tires and Rims > Tire Compound**
 
 | Choice | Compound | Tire model | Price |
 |---|---|---|---|
-| **Drag Tire Compound** | `19_Drag` | the game's drag tire (`drag`, or `OW_drag` on open-world cars) | 10 000 CR |
-| **Drift Tire Compound** | `18_Drift` | the car's own race tire model | 10 000 CR |
+| **Drag Tire Compound** | `19_Drag` | the car's own Race tire models | 10 000 CR |
+| **Drift Tire Compound** | `18_Drift` | the car's own Sport tire models | 10 000 CR |
 
 Both are on every car, are stored per owned car like any other tire compound, and show in the car's tire list with their own name and description.
 Cars that already have the compound (the two Hot Wheels cars) are left alone.
@@ -48,7 +48,7 @@ Needs CMake and a MinGW-w64 (llvm-mingw) toolchain. Put the FH3 Mod Platform che
 
 Pure data. The mod queues SQL for the platform (`add_sql`), which applies it to a copy of `gamedbRC.slt` that the game reads from `mediaoverride`:
 
-- one `List_UpgradeTireCompound` row per car and compound (compound id, price, tire model; level 10 for drag, level 11 for drift),
+- one `List_UpgradeTireCompound` row per car and compound (compound id, price, tire models copied from the car's Race / Sport row; level 10 for drag, level 11 for drift),
 - the names and descriptions as new strings in `Upgrades.str` (`add_string_key`), in a new `Upgrades` row for each level. Nothing the game already has is changed.
 
 ## License

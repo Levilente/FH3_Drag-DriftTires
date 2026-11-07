@@ -1,10 +1,10 @@
 // Drag & Drift Tires for Forza Horizon 3 (FH3 Mod Platform mod).
 //
 // Adds two tire compounds to every car's Garage > Upgrades > Tires and Rims > Tire Compound list:
-//   - "Drag Tire Compound":  the game's own hidden 19_Drag compound with the game's own drag tire model (tire_drag / tire_OW_drag).
-//   - "Drift Tire Compound": the game's own hidden 18_Drift compound, on the car's normal race tire model.
-// Both compounds and the drag tire models are already in the game's files, but no car's upgrade list uses them (only the Hot Wheels
-// Bone Shaker and Twin Mill have the compounds, on a normal tire model).
+//   - "Drag Tire Compound":  the game's own hidden 19_Drag compound, on the car's Race tire models.
+//   - "Drift Tire Compound": the game's own hidden 18_Drift compound, on the car's Sport tire models.
+// Both compounds are already in the game's files, but no car's upgrade list uses them (only the Hot Wheels Bone Shaker and Twin Mill have
+// them). The game's drag tire model (tire_drag) shows a car with no tires, so it isn't used.
 //
 // How it works: pure data. The mod queues SQL for the platform (add_sql), which applies it to a copy of gamedbRC.slt that the game reads
 // instead (mediaoverride; the game's own files are never touched):
@@ -27,7 +27,8 @@ namespace {
 // Game constants (read from gamedbRC.slt): List_TireCompound ids, and the Upgrades rows for the Tire Compound part (UpgradeTypes id 21).
 constexpr int kCompoundDrift = 18;   // List_TireCompound: 18_Drift
 constexpr int kCompoundDrag  = 19;   // List_TireCompound: 19_Drag
-constexpr int kCompoundRace  = 12;   // List_TireCompound: 12_DOTCompetition (the "Race" compound, 'b' tire model)
+constexpr int kLevelSport    = 2;    // List_UpgradeTireCompound.Level of the "Sport Tire Compound" (the drift tires use its tire models)
+constexpr int kLevelRace     = 3;    // ... of the "Race Tire Compound" (the drag tires use its tire models)
 
 // The Level a compound is stored under in List_UpgradeTireCompound; the shop lists a car's compounds by level, names them from the
 // Upgrades row with the same level. Both levels are new, with new Upgrades rows: nothing the game has is changed.
@@ -91,9 +92,18 @@ std::string text_ref(uint32_t key) {   // how the database refers to a text in U
     return "_&" + std::to_string((static_cast<unsigned long long>(FH3_TABLE_UPGRADES) << 32) | key);
 }
 
-// One compound for every car that doesn't have it yet: a List_UpgradeTireCompound row at `level`.
-//   `model_sql` is the SQL expression for the tire model name; `s` is the car's stock row.
-std::string rows_sql(int compound, int level, int id_offset, int price, const std::string& model_sql) {
+// The game has no drag tire model (tire_drag / tire_OW_drag are in the files but show a car with no tires), so each new compound borrows the tire
+// models of one of the car's own existing compounds: the row at `from_level` (Race = 3, Sport = 2), else the car's stock models.
+//   `col` is the model column to copy (TireModelName, WetTireModelName or SnowTireModelName); `s` is the car's stock row.
+std::string borrow_sql(const char* col, int from_level) {
+    char b[400];
+    std::snprintf(b, sizeof b, "COALESCE((SELECT r.%s FROM List_UpgradeTireCompound r WHERE r.Ordinal=s.Ordinal AND r.Level=%d LIMIT 1),s.%s)", col,
+                  from_level, col);
+    return b;
+}
+
+// One compound for every car that doesn't have it yet: a List_UpgradeTireCompound row at `level`, on the tire models of `from_level`.
+std::string rows_sql(int compound, int level, int id_offset, int price, int from_level) {
     char head[512];
     std::snprintf(head, sizeof head,
                   "INSERT OR IGNORE INTO List_UpgradeTireCompound "
@@ -106,7 +116,8 @@ std::string rows_sql(int compound, int level, int id_offset, int price, const st
                   " FROM List_UpgradeTireCompound s WHERE s.IsStock=1 "
                   "AND NOT EXISTS (SELECT 1 FROM List_UpgradeTireCompound x WHERE x.Ordinal=s.Ordinal AND (x.Level=%d OR x.TireCompoundID=%d));",
                   level, compound);
-    return std::string(head) + model_sql + "," + model_sql + "," + model_sql + tail;
+    return std::string(head) + borrow_sql("TireModelName", from_level) + "," + borrow_sql("WetTireModelName", from_level) + "," +
+           borrow_sql("SnowTireModelName", from_level) + tail;
 }
 
 void add_texts_and_sql() {
@@ -122,9 +133,7 @@ void add_texts_and_sql() {
                       "VALUES (%d,'21',0,'%s',%d,'%s','%s','%s');",
                       kDragUpgradeId, text_ref(kKeyDragName).c_str(), kDragLevel, text_ref(kKeyDragDesc).c_str(), kIcon, kImage);
         sql += buf;
-        // The game's drag tire models: tire_drag (normal cars) and tire_OW_drag (open-world cars, whose stock tire model starts with OW_).
-        sql += rows_sql(kCompoundDrag, kDragLevel, 20, g_drag_price,
-                        "CASE WHEN s.TireModelName LIKE 'OW\\_%' ESCAPE '\\' THEN 'OW_drag' ELSE 'drag' END");
+        sql += rows_sql(kCompoundDrag, kDragLevel, 20, g_drag_price, kLevelRace);
     }
     if (g_drift) {
         g_api->add_string_key(g_mod, "Upgrades.str", kKeyDriftName, L"Drift Tire Compound");
@@ -137,14 +146,7 @@ void add_texts_and_sql() {
                       "VALUES (%d,'21',0,'%s',%d,'%s','%s','%s');",
                       kDriftUpgradeId, text_ref(kKeyDriftName).c_str(), kDriftLevel, text_ref(kKeyDriftDesc).c_str(), kIcon, kImage);
         sql += buf;
-        // The car's own race tire model (the compound-12 row that isn't a Redline/Horizon edition), else a plain race tire model.
-        char model[700];
-        std::snprintf(model, sizeof model,
-                      "COALESCE((SELECT r.TireModelName FROM List_UpgradeTireCompound r WHERE r.Ordinal=s.Ordinal AND r.TireCompoundID=%d "
-                      "AND r.TireModelName NOT LIKE '%%Redline%%' AND r.TireModelName NOT LIKE '%%orizon%%' ORDER BY r.Level LIMIT 1),"
-                      "CASE WHEN s.TireModelName LIKE 'OW\\_%%' ESCAPE '\\' THEN 'OW_b' ELSE 'b' END)",
-                      kCompoundRace);
-        sql += rows_sql(kCompoundDrift, kDriftLevel, 21, g_drift_price, model);
+        sql += rows_sql(kCompoundDrift, kDriftLevel, 21, g_drift_price, kLevelSport);
     }
     if (!sql.empty()) {
         g_api->add_sql(g_mod, sql.c_str());
