@@ -17,3 +17,7 @@ First release of **Drag and Drift Tires for Forza Horizon 3**, on the [FH3 Mod P
 ## 1.0.2
 
 - Drift Tire Compound grip raised, it was too slippery to pull away: 80 % acceleration, 80 % cornering, 90 % braking grip of the Sport compound.
+
+## 1.0.3
+
+- Drift Tire Compound: the acceleration grip now depends on speed, so the car pulls away fine but slides on the throttle in a higher gear: 80 % of the Sport compound's at low speed, 60 % at speed, 72 % cornering, 90 % braking grip.

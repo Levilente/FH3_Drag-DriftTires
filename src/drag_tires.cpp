@@ -56,8 +56,9 @@ constexpr double kLongGrip   = 1.70;   // the drag compound's straight-line (lau
 constexpr double kLatGrip    = 0.55;   // its cornering grip, as a multiple of the Race compound's
 // The drift compound is made from the Sport compound with much less grip, so a powerful car breaks traction and holds a slide on the throttle
 // (the game's own 18_Drift compound has MORE acceleration grip than Race, 1.55 against 1.35, and doesn't slide).
-constexpr double kDriftAccelGrip = 0.80;   // acceleration grip (launch and high speed), as a multiple of the Sport compound's
-constexpr double kDriftLatGrip   = 0.80;   // cornering grip
+constexpr double kDriftAccel0Grip = 0.80;  // acceleration grip at low speed (about 5 m/s and below: pulling away), as a multiple of the Sport compound's
+constexpr double kDriftAccel1Grip = 0.60;  // acceleration grip at speed (about 15 m/s and above: sliding in a higher gear)
+constexpr double kDriftLatGrip   = 0.72;   // cornering grip
 constexpr double kDriftBrakeGrip = 0.90;   // braking grip
 
 std::string text_ref(uint32_t key) {   // how the database refers to a text in Upgrades.str
@@ -146,7 +147,7 @@ void add_texts_and_sql() {
                       "DELETE FROM List_TireCompound WHERE TireCompoundID=%d;"
                       "INSERT INTO List_TireCompound SELECT * FROM drifttires_c;"
                       "DROP TABLE drifttires_c;",
-                      kCompoundSport, kCompoundDrift, kDriftAccelGrip, kDriftAccelGrip, kDriftLatGrip, kDriftBrakeGrip, kCompoundDrift);
+                      kCompoundSport, kCompoundDrift, kDriftAccel0Grip, kDriftAccel1Grip, kDriftLatGrip, kDriftBrakeGrip, kCompoundDrift);
         sql += d;
         sql += rows_sql(kCompoundDrift, kDriftLevel, 21, kDriftPrice, kLevelSport);
     }
