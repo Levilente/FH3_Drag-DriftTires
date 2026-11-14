@@ -56,9 +56,9 @@ constexpr double kLongGrip   = 1.70;   // the drag compound's straight-line (lau
 constexpr double kLatGrip    = 0.55;   // its cornering grip, as a multiple of the Race compound's
 // The drift compound is made from the Sport compound with much less grip, so a powerful car breaks traction and holds a slide on the throttle
 // (the game's own 18_Drift compound has MORE acceleration grip than Race, 1.55 against 1.35, and doesn't slide).
-constexpr double kDriftAccelGrip = 0.55;   // acceleration grip (launch and high speed), as a multiple of the Sport compound's
-constexpr double kDriftLatGrip   = 0.65;   // cornering grip
-constexpr double kDriftBrakeGrip = 0.80;   // braking grip
+constexpr double kDriftAccelGrip = 0.80;   // acceleration grip (launch and high speed), as a multiple of the Sport compound's
+constexpr double kDriftLatGrip   = 0.80;   // cornering grip
+constexpr double kDriftBrakeGrip = 0.90;   // braking grip
 
 std::string text_ref(uint32_t key) {   // how the database refers to a text in Upgrades.str
     return "_&" + std::to_string((static_cast<unsigned long long>(FH3_TABLE_UPGRADES) << 32) | key);
