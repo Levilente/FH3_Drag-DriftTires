@@ -2,7 +2,7 @@
 //
 // Adds two tire compounds to every car's Garage > Upgrades > Tires and Rims > Tire Compound list:
 //   - "Drag Tire Compound":  a new compound made from the Race compound with much more straight-line grip, on the car's Race tire models.
-//   - "Drift Tire Compound": the game's own hidden 18_Drift compound, on the car's Sport tire models.
+//   - "Drift Tire Compound": a new compound made from the Sport compound with much less grip, on the car's Sport tire models.
 // The drift compound is already in the game's files, but no car's upgrade list uses it (only the Hot Wheels Twin Mill has it). The game's
 // own 19_Drag compound is weaker than Race on a cold tire and the game's drag tire model (tire_drag) shows a car with no tires, so
 // neither is used.
@@ -23,7 +23,8 @@
 namespace {
 
 // Game constants (read from gamedbRC.slt): List_TireCompound ids, and the Upgrades rows for the Tire Compound part (UpgradeTypes id 21).
-constexpr int kCompoundDrift = 18;   // List_TireCompound: 18_Drift
+constexpr int kCompoundDrift = 24;   // List_TireCompound: new row made by this mod (a copy of 11_DOT_Sport with much less grip)
+constexpr int kCompoundSport = 11;   // List_TireCompound: 11_DOT_Sport, the copy's base
 constexpr int kCompoundDrag  = 23;   // List_TireCompound: new row made by this mod (a copy of 12_DOTCompetition with more straight-line grip)
 constexpr int kCompoundRace  = 12;   // List_TireCompound: 12_DOTCompetition, the copy's base
 constexpr int kLevelSport    = 2;    // List_UpgradeTireCompound.Level of the "Sport Tire Compound" (the drift tires use its tire models)
@@ -53,6 +54,11 @@ constexpr int kDragPrice     = 10000;
 constexpr int kDriftPrice    = 10000;
 constexpr double kLongGrip   = 1.70;   // the drag compound's straight-line (launch and acceleration) grip, as a multiple of the Race compound's
 constexpr double kLatGrip    = 0.55;   // its cornering grip, as a multiple of the Race compound's
+// The drift compound is made from the Sport compound with much less grip, so a powerful car breaks traction and holds a slide on the throttle
+// (the game's own 18_Drift compound has MORE acceleration grip than Race, 1.55 against 1.35, and doesn't slide).
+constexpr double kDriftAccelGrip = 0.55;   // acceleration grip (launch and high speed), as a multiple of the Sport compound's
+constexpr double kDriftLatGrip   = 0.65;   // cornering grip
+constexpr double kDriftBrakeGrip = 0.80;   // braking grip
 
 std::string text_ref(uint32_t key) {   // how the database refers to a text in Upgrades.str
     return "_&" + std::to_string((static_cast<unsigned long long>(FH3_TABLE_UPGRADES) << 32) | key);
@@ -120,14 +126,28 @@ void add_texts_and_sql() {
     {
         g_api->add_string_key(g_mod, "Upgrades.str", kKeyDriftName, L"Drift Tire Compound");
         g_api->add_string_key(g_mod, "Upgrades.str", kKeyDriftDesc,
-                              L"Installs a tire compound made for sliding: it lets go of the road early and smoothly, so the car breaks away "
-                              L"and holds a drift with less effort.");
+                              L"Installs a low-grip compound made for sliding: the rear lets go easily under power and the car holds a drift "
+                              L"on the throttle. Not for grip driving.");
         char buf[900];
         std::snprintf(buf, sizeof buf,
                       "INSERT OR REPLACE INTO Upgrades (id,TypeId,IsException,Name,Level,Description,IconPath,ImagePath) "
                       "VALUES (%d,'21',0,'%s',%d,'%s','%s','%s');",
                       kDriftUpgradeId, text_ref(kKeyDriftName).c_str(), kDriftLevel, text_ref(kKeyDriftDesc).c_str(), kIcon, kImage);
         sql += buf;
+        char d[1400];
+        std::snprintf(d, sizeof d,
+                      "DROP TABLE IF EXISTS temp.drifttires_c;"
+                      "CREATE TEMP TABLE drifttires_c AS SELECT * FROM List_TireCompound WHERE TireCompoundID=%d;"
+                      "UPDATE drifttires_c SET TireCompoundID=%d, DisplayName='24_DriftTires', "
+                      "TorqueFreeLongFrictionScaleAccel0=TorqueFreeLongFrictionScaleAccel0*%.4f, "
+                      "TorqueFreeLongFrictionScaleAccel1=TorqueFreeLongFrictionScaleAccel1*%.4f, "
+                      "TorqueFreeLatFrictionScale=TorqueFreeLatFrictionScale*%.4f, "
+                      "TorqueFreeLongFrictionScaleBrake=TorqueFreeLongFrictionScaleBrake*%.4f;"
+                      "DELETE FROM List_TireCompound WHERE TireCompoundID=%d;"
+                      "INSERT INTO List_TireCompound SELECT * FROM drifttires_c;"
+                      "DROP TABLE drifttires_c;",
+                      kCompoundSport, kCompoundDrift, kDriftAccelGrip, kDriftAccelGrip, kDriftLatGrip, kDriftBrakeGrip, kCompoundDrift);
+        sql += d;
         sql += rows_sql(kCompoundDrift, kDriftLevel, 21, kDriftPrice, kLevelSport);
     }
     g_api->add_sql(g_mod, sql.c_str());

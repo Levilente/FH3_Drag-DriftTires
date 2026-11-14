@@ -7,7 +7,7 @@ Two hidden tire compounds from the files of **Forza Horizon 3** (the Xbox One bu
 
 ## What it does
 
-The game ships a `19_Drag` and an `18_Drift` tire compound but no car's
+The game ships a `19_Drag` and an `18_Drift` tire compound (the drift one has more acceleration grip than Race) but no car's
 upgrade list offers them (only the Hot Wheels Bone Shaker and Twin Mill have the compounds, on a normal tire model). This mod adds them to the list:
 
 **Garage > Upgrades > Tires and Rims > Tire Compound**
@@ -15,7 +15,7 @@ upgrade list offers them (only the Hot Wheels Bone Shaker and Twin Mill have the
 | Choice | Compound | Tire model | Price |
 |---|---|---|---|
 | **Drag Tire Compound** | new, made from `12_DOTCompetition` (Race) with **170 %** of its straight-line grip and **55 %** of its cornering grip | the car's own Race tire models | 10 000 CR |
-| **Drift Tire Compound** | `18_Drift` | the car's own Sport tire models | 10 000 CR |
+| **Drift Tire Compound** | new, made from `11_DOT_Sport` with 55 % of its acceleration grip, 65 % of its cornering grip and 80 % of its braking grip, on the car's own Sport tire models | 10 000 CR |
 
 Both are on every car, are stored per owned car like any other tire compound, and show in the car's tire list with their own name and description.
 Cars that already have the compound (the two Hot Wheels cars) are left alone.
